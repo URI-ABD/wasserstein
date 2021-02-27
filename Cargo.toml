@@ -1,7 +1,12 @@
 [package]
-name = "uri-abd"
+name = "wasserstein"
 version = "0.1.0"
-authors = ["Tom Howard <info@tomhoward.codes>", "Najib Ishaq <nishaq@my.uri.edu>", "Noah Daniels <noah_daniels@uri.edu>"]
+authors = ["Najib Ishaq <nishaq@my.uri.edu>"]
+description = "This crate provides an implementation of the Wasserstein Distance metric on multi-dimensional probability distributions."
+repository = "https://github.com/URI-ABD/wasserstein"
+keywords = ["wasserstein", "flow", "optimization"]
+categories = ["algorithms", "distance"]
+license = "MIT"
 edition = "2018"
 
 # Publishing lock.
@@ -9,6 +14,7 @@ edition = "2018"
 # and update the release github action.
 publish = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+
+[build-dependencies]
+gcc = "0.3"
