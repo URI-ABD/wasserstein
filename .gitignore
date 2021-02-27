@@ -153,3 +153,4 @@ dmypy.json
 # local files
 *.pdf
 .idea
+cmake-build-debug
