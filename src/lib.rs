@@ -9,3 +9,17 @@
 //!
 
 pub mod graph;
+pub mod wasserstein;
+
+#[cfg(test)]
+mod tests {
+    use crate::wasserstein::wasserstein_1d;
+
+    #[test]
+    fn test_wasserstein_1d() {
+        let left = vec![2, 1, 0, 0, 3, 0, 4];
+        let right = vec![0, 5, 3, 0, 2, 0, 0];
+        let (dist, _) = wasserstein_1d(left, right).unwrap();
+        assert_eq!(dist, 22);
+    }
+}

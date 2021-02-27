@@ -1,21 +1,8 @@
-#[link(name = "wasserstein")]
-extern "C" {
-    fn min_cost_max_flow_i64(
-        num_vertices: i64,
-        num_edges: i64,
-        max_capacity: i64,
-        vertex_supplies: *const i64,
-        edges_left: *const i64,
-        edges_right: *const i64,
-        edge_costs: *const i64,
-        edge_flows: *mut i64,
-    ) -> i64;
-}
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub struct Vertex {
-    index: usize,
-    supply: i64,
+    pub index: usize,
+    pub supply: i64,
 }
 
 impl Vertex {
@@ -32,9 +19,9 @@ pub struct Edge {
 }
 
 pub struct Graph {
-    vertices: Vec<Vertex>,
-    edges: Vec<Edge>,
-    max_capacity: usize,
+    pub vertices: Vec<Vertex>,
+    pub edges: Vec<Edge>,
+    pub max_capacity: usize,
 }
 
 impl Graph {
@@ -91,7 +78,7 @@ impl Graph {
         self.vertices[vertex.index].supply = -demand;
     }
 
-    pub fn mcmf(&mut self) -> i64 {
+    pub fn mcmf(&mut self) -> Result<usize, String> {
         let num_vertices = self.vertices.len() as i64;
         let num_edges = self.edges.len() as i64;
         let max_capacity = self.max_capacity as i64;
@@ -102,11 +89,11 @@ impl Graph {
             .collect();
         let edges_left: Vec<i64> = self.edges.iter().map(|e| e.left.index as i64).collect();
         let edges_right: Vec<i64> = self.edges.iter().map(|e| e.right.index as i64).collect();
-        let edge_costs: Vec<i64> = self.edges.iter().map(|e| e.cost as i64).collect();
+        let edge_costs: Vec<i64> = self.edges.iter().map(|e| clamp_to_i32(e.cost as i64)).collect();
         let mut edge_flows: Vec<i64> = vec![0; self.edges.len()];
-        let total_flow: i64;
+        let total_cost: i64;
         unsafe {
-            total_flow = min_cost_max_flow_i64(
+            total_cost = min_cost_max_flow_i64(
                 num_vertices,
                 num_edges,
                 max_capacity,
@@ -118,14 +105,38 @@ impl Graph {
             );
         }
         for (edge, &flow) in self.edges.iter_mut().zip(edge_flows.iter()) {
-            edge.flow = flow as usize
+            if flow < 0 {
+                return Err(format!(
+                    "found negative flow {} on edge {} -> {}",
+                    flow,
+                    edge.left.index,
+                    edge.right.index,
+                ));
+            } else {
+                edge.flow = flow as usize
+            }
         }
-        total_flow
+        Ok(total_cost as usize)
     }
 }
 
+// Cost, Supply and Demand values must fit in i32
 fn clamp_to_i32(value: i64) -> i64 {
     let max = std::i32::MAX as i64;
     let value = std::cmp::min(value, max);
     std::cmp::max(value, -max)
+}
+
+#[link(name = "wasserstein")]
+extern "C" {
+    fn min_cost_max_flow_i64(
+        num_vertices: i64,
+        num_edges: i64,
+        max_capacity: i64,
+        vertex_supplies: *const i64,
+        edges_left: *const i64,
+        edges_right: *const i64,
+        edge_costs: *const i64,
+        edge_flows: *mut i64,
+    ) -> i64;
 }
