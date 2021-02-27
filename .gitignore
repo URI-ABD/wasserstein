@@ -148,3 +148,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# local files
+*.pdf
+.idea
