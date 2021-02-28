@@ -1,21 +1,40 @@
-
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub struct Vertex {
     pub index: usize,
+    pub coordinates: (usize, usize),
     pub supply: i64,
 }
 
 impl Vertex {
     pub fn new(index: usize) -> Self {
-        Vertex { index, supply: 0 }
+        Vertex {
+            index,
+            coordinates: (0, 0),
+            supply: 0,
+        }
     }
 }
 
+// For now, ground cost across an edge is manhattan distance
 pub struct Edge {
     pub left: Vertex,
     pub right: Vertex,
     pub cost: usize,
     pub flow: usize,
+}
+
+impl Edge {
+    pub fn new(left: Vertex, right: Vertex) -> Self {
+        let diff = |l, r| if l < r { r - l } else { l - r };
+        let cost = diff(left.coordinates.0, right.coordinates.0)
+            + diff(left.coordinates.1, right.coordinates.1);
+        Edge {
+            left,
+            right,
+            cost,
+            flow: 0,
+        }
+    }
 }
 
 pub struct Graph {
@@ -89,7 +108,11 @@ impl Graph {
             .collect();
         let edges_left: Vec<i64> = self.edges.iter().map(|e| e.left.index as i64).collect();
         let edges_right: Vec<i64> = self.edges.iter().map(|e| e.right.index as i64).collect();
-        let edge_costs: Vec<i64> = self.edges.iter().map(|e| clamp_to_i32(e.cost as i64)).collect();
+        let edge_costs: Vec<i64> = self
+            .edges
+            .iter()
+            .map(|e| clamp_to_i32(e.cost as i64))
+            .collect();
         let mut edge_flows: Vec<i64> = vec![0; self.edges.len()];
         let total_cost: i64;
         unsafe {
@@ -108,9 +131,7 @@ impl Graph {
             if flow < 0 {
                 return Err(format!(
                     "found negative flow {} on edge {} -> {}",
-                    flow,
-                    edge.left.index,
-                    edge.right.index,
+                    flow, edge.left.index, edge.right.index,
                 ));
             } else {
                 edge.flow = flow as usize

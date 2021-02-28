@@ -15,6 +15,7 @@ edition = "2018"
 publish = false
 
 [dependencies]
+ndarray = "^0.14"
 
 [build-dependencies]
 cc = "^1.0"
