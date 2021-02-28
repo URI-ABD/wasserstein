@@ -1,6 +1,7 @@
 use ndarray::Array2;
 
 use crate::graph::{Edge, Graph, Vertex};
+use std::collections::HashMap;
 
 pub fn wasserstein_1d(left: Vec<u64>, right: Vec<u64>) -> Result<usize, String> {
     let total_supply: u64 = left.iter().sum();
@@ -66,6 +67,10 @@ pub fn wasserstein_2d(left: Array2<u64>, right: Array2<u64>) -> Result<usize, St
         let num_bins = n * m;
 
         let mut vertices = vec![];
+        let mut sources: HashMap<(usize, usize), Vertex> = HashMap::new();
+        let mut middles: HashMap<(usize, usize), Vertex> = HashMap::new();
+        let mut sinks: HashMap<(usize, usize), Vertex> = HashMap::new();
+
         for l in 0..3 {
             for i in 0..n {
                 for j in 0..m {
@@ -82,6 +87,13 @@ pub fn wasserstein_2d(left: Array2<u64>, right: Array2<u64>) -> Result<usize, St
                         supply,
                         coordinates: (i, j),
                     };
+                    if l == 0 {
+                        sources.insert((i, j), vertex);
+                    } else if l == 1 {
+                        middles.insert((i, j), vertex);
+                    } else {
+                        sinks.insert((i, j), vertex);
+                    }
                     vertices.push(vertex);
                 }
             }
@@ -90,16 +102,21 @@ pub fn wasserstein_2d(left: Array2<u64>, right: Array2<u64>) -> Result<usize, St
         let mut edges = vec![];
         for i in 0..n {
             for j in 0..m {
-                let left_index = m * i + j;
-                let right_indices: Vec<usize> = (0..m).map(|k| num_bins + k + i * m).collect();
-                for &right_index in right_indices.iter() {
-                    edges.push(Edge::new(vertices[left_index], vertices[right_index]));
+                let source_coordinates = (i, j);
+                let middle_coordinates: Vec<(usize, usize)> = (0..m).map(|k| (i, k)).collect();
+                for &middle in middle_coordinates.iter() {
+                    edges.push(Edge::new(
+                        *sources.get(&source_coordinates).unwrap(),
+                        *middles.get(&middle).unwrap(),
+                    ))
                 }
 
-                let left_index = num_bins + left_index;
-                let right_indices: Vec<usize> = (0..n).map(|k| 2 * num_bins + k * m + j).collect();
-                for &right_index in right_indices.iter() {
-                    edges.push(Edge::new(vertices[left_index], vertices[right_index]));
+                let sink_coordinates: Vec<(usize, usize)> = (0..n).map(|k| (k, j)).collect();
+                for &sink in sink_coordinates.iter() {
+                    edges.push(Edge::new(
+                        *middles.get(&source_coordinates).unwrap(),
+                        *sinks.get(&sink).unwrap(),
+                    ))
                 }
             }
         }
